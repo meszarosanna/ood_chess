@@ -1,0 +1,6 @@
+tensorflow[and-cuda]==2.15
+numpy
+protobuf
+pyyaml
+rich
+tf-models-official
