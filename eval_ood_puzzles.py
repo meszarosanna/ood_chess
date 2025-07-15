@@ -6,7 +6,7 @@ from best_move_transformer import get_best_move as get_transformer_move
 from best_move_transformer import load_transformer_model
 from best_move_stockfish import get_best_move as get_stockfish_moves
 
-MODEL_NAME = 'BC' 
+MODEL_NAME = '270M' 
 neural_engine = load_transformer_model(MODEL_NAME)
 
 # Stockfish parameters
@@ -46,8 +46,6 @@ def eval_entire_sequence(board):
  
 
 for puzzle_id, puzzle in puzzles.iterrows():
-    if puzzle_id%10 == 0:
-        print(puzzle_id)
     fen = puzzle["FEN"]
     # Get transformer's best move
     board = chess.Board(fen)
@@ -96,14 +94,26 @@ for puzzle_id, puzzle in puzzles.iterrows():
     if eval_entire_sequence(board):
         count_entire += 1 
 
-    print(count_legal)
-    print(count_top1)   
-    print(count_top3)
-    print(count_top5)
-    print(count_top10)
-    print(count_entire)
-
-print(count_stockfish_error_3)
-print(count_stockfish_error_5)
-print(count_stockfish_error_10)
+    if puzzle_id == 9:
+        print("When predicting the next move, from 10 puzzles:")
+        print(f'{count_legal} are legal')
+        print(f'{count_top1} are in top1 of Stockfish')
+        print(f'{count_top3} are in top3 of Stockfish')
+        print(f'{count_top5} are in top5 of Stockfish')
+        print(f'{count_top10} are in top10 of Stockfish')
+        print(f'{count_entire} are matching the entire sequence of the solution')
+        #print(count_legal)
+        #print(count_top1)   
+        #print(count_top3)
+        #print(count_top5)
+        #print(count_top10)
+        #print(count_entire)
+        print("And Stockfish coundn't give")
+        print(f' top3 moves in {count_stockfish_error_3} cases')
+        print(f' top5 moves in {count_stockfish_error_5} cases')
+        print(f' top10 moves in {count_stockfish_error_10} cases')
+        #print(count_stockfish_error_3)
+        #print(count_stockfish_error_5)  
+        #print(count_stockfish_error_10)
+        break
 

@@ -6,8 +6,8 @@ import numpy as np
 from load_transformer import load_transformer_model
 
 #to get rid of the warnings: W external/xla/xla/service/gpu/autotuning/dot_search_space.cc:200] All configs were filtered out because none of them sufficiently match the hints. Maybe the hints set does not contain a good representative set of valid configs?Working around this by using the full hints set instead.
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-os.environ["XLA_FLAGS"] = "--xla_gpu_autotune_level=0"
+#os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+#os.environ["XLA_FLAGS"] = "--xla_gpu_autotune_level=0"
 
 
 def get_best_move(fen_string, neural_engine, win_probab=False):
@@ -84,7 +84,7 @@ def get_best_move(fen_string, neural_engine, win_probab=False):
 
 if __name__ == "__main__":
 
-    model_name = "BC"
+    model_name = "270M"
     model = load_transformer_model(model_name)
     # The FEN string for the position you want to analyze
     #fen = "rnbqkbnr/pppppppp/7r/8/8/7Q/PPPPPPPP/RNBQKBNN b" # KQkq - 0 1"  # Starting position

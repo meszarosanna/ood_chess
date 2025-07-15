@@ -6,9 +6,14 @@ import ast
 import ast
 from flax import traverse_util
 
-def key_mapping_function():
+def key_mapping_function(model_name):
+    if model_name == "BC":
+        folder_name = "9M_behavioral_cloning"
+    elif model_name == "SV":
+        folder_name = "9M_state_value"
+
     # Path to the params directory and metadata file
-    ckpt_path = "/home/am3049/ood_chess/searchless_chess/checkpoints/9M_behavioral_cloning/0/params"
+    ckpt_path = "/home/am3049/ood_chess/searchless_chess/checkpoints/" + folder_name
     metadata_path = ckpt_path + "/_METADATA"
 
     # Parse the _METADATA file to get the parameter tree structure
@@ -96,7 +101,7 @@ def key_mapping_function():
     #reshape the attention layers from (256, 8, 32), (8, 32, 256) to (256, 256)
     for k, v in remapped_params.items():
         if v.shape == (256, 8, 32):
-            remapped_params[k] = v.reshape(256, 256).T
+            remapped_params[k] = v.reshape(256, 256)
         if v.shape == (8, 32, 256):
             remapped_params[k] = v.reshape(256, 256)
 
