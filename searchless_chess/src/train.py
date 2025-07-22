@@ -28,10 +28,9 @@ from searchless_chess.src import training
 from searchless_chess.src import transformer
 from searchless_chess.src import utils
 
-
 _POLICY = flags.DEFINE_enum(
     'policy',
-    'action_value',
+    'behavioral_cloning',
     config_lib.POLICY_TYPES,
     'The policy used to play moves with the model.',
 )
@@ -46,20 +45,26 @@ def main(argv: Sequence[str]) -> None:
 
   match policy:
     case 'action_value':
+      vocab_size = utils.NUM_ACTIONS
       output_size = num_return_buckets
+      max_sequence_length = tokenizer.SEQUENCE_LENGTH + 2
     case 'behavioral_cloning':
+      vocab_size = len(tokenizer._CHARACTERS)
       output_size = utils.NUM_ACTIONS
+      max_sequence_length = tokenizer.SEQUENCE_LENGTH + 1
     case 'state_value':
+      vocab_size = utils.NUM_ACTIONS
       output_size = num_return_buckets
+      max_sequence_length = tokenizer.SEQUENCE_LENGTH + 1
 
   predictor_config = transformer.TransformerConfig(
-      vocab_size=utils.NUM_ACTIONS,
+      vocab_size=vocab_size,
       output_size=output_size,
       pos_encodings=transformer.PositionalEncodings.LEARNED,
-      max_sequence_length=tokenizer.SEQUENCE_LENGTH + 2,
-      num_heads=4,
-      num_layers=4,
-      embedding_dim=64,
+      max_sequence_length=max_sequence_length,
+      num_heads=8,
+      num_layers=16,
+      embedding_dim=1024,
       apply_post_ln=True,
       apply_qk_layernorm=False,
       use_causal_mask=False,
@@ -67,17 +72,17 @@ def main(argv: Sequence[str]) -> None:
   train_config = config_lib.TrainConfig(
       learning_rate=1e-4,
       data=config_lib.DataConfig(
-          batch_size=256,
+          batch_size=256, #256
           shuffle=True,
           worker_count=0,  # 0 disables multiprocessing.
           num_return_buckets=num_return_buckets,
           policy=policy,
           split='train',
       ),
-      log_frequency=1,
-      num_steps=20,
-      ckpt_frequency=5,
-      save_frequency=10,
+      log_frequency=1000, #1
+      num_steps=10000000, #20
+      ckpt_frequency=10000, #5
+      save_frequency=10000, #10
   )
   eval_config = config_lib.EvalConfig(
       data=config_lib.DataConfig(
@@ -90,9 +95,9 @@ def main(argv: Sequence[str]) -> None:
       ),
       use_ema_params=True,
       policy=policy,
-      batch_size=32,
+      batch_size=256, #32
       num_return_buckets=num_return_buckets,
-      num_eval_data=64,
+      #num_eval_data=64,
   )
 
   params = training.train(
