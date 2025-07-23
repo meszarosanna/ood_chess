@@ -42,6 +42,46 @@ def load_transformer_model(model_name):
         
 
         # Create prediction function
+        predict_fn = neural_engines.wrap_predict_fn(predictor, params, batch_size=1)
+        # Create the neural engine
+        neural_engine = neural_engines.BCEngine(
+            predict_fn=predict_fn,
+            temperature=0.005,  # Add some randomness to the moves
+        )
+        return neural_engine
+    elif model_name == "BC 270M":
+        # Configure the transformer model
+        predictor_config = transformer.TransformerConfig(
+            vocab_size=len(tokenizer._CHARACTERS),
+            output_size=utils.NUM_ACTIONS,  # For behavioral cloning, output size is number of actions
+            pos_encodings=transformer.PositionalEncodings.LEARNED,
+            max_sequence_length=tokenizer.SEQUENCE_LENGTH + 1,  # BC uses +1 instead of +2
+            num_heads=8,
+            num_layers=16, 
+            embedding_dim=1024, 
+            apply_post_ln=True,
+            apply_qk_layernorm=False,
+            use_causal_mask=False,
+        )
+        
+        predictor = transformer.build_transformer_predictor(config=predictor_config)
+        checkpoint_dir = os.path.join(os.getcwd(), 'searchless_chess/checkpoints/local/behavioral_cloning')
+        dummy_params = predictor.initial_params(
+            rng=jrandom.PRNGKey(1),
+            targets=np.ones((1, 1), dtype=np.uint32),
+        )
+        #for k, v in dummy_params.items():
+        #    for k2, v2 in v.items():
+       #         print(f"{k}.{k2}: {v2.shape}")
+        # Load the trained parameters using key_mapping
+        params = training_utils.load_parameters(
+            checkpoint_dir=checkpoint_dir,
+            params=dummy_params,
+            step=200000
+        )
+        
+
+        # Create prediction function
         predictor = transformer.build_transformer_predictor(config=predictor_config)
         predict_fn = neural_engines.wrap_predict_fn(predictor, params, batch_size=1)
         # Create the neural engine
@@ -84,7 +124,7 @@ def load_transformer_model(model_name):
         neural_engine = neural_engines.ActionValueEngine(
             return_buckets_values=return_buckets_values,
             predict_fn=predict_fn,
-            temperature=0.005,
+            #temperature=0.005,
         )
         return neural_engine
     elif model_name == "9M":

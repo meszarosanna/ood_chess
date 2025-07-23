@@ -26,6 +26,8 @@ MANIFEST
 #Ignore train and test data
 data/train/
 data/test/
+!data/train/filtered_behavioral_cloning_data.bag
+!data/test/filtered_behavioral_cloning_data.bag
 
 #Ignore checkpoints
 checkpoints/*
