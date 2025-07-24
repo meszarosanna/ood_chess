@@ -28,5 +28,10 @@ pip install --upgrade "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-re
 python filter_data.py
 
 6. Train the model
+Adjust batch_size in train.py if needed
 
 python searchless_chess/src/train.py
+
+7. Checkpoints
+
+Checkpoints are saved to searchless_chess/checkpoints/local
