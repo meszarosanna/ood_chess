@@ -23,6 +23,7 @@ import jax
 import jax.nn as jnn
 import numpy as np
 import scipy.special
+import time
 
 from searchless_chess.src import constants
 from searchless_chess.src import tokenizer
