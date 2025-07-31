@@ -18,6 +18,7 @@
 import os
 
 import chess
+import chess.engine
 
 from searchless_chess.src.engines import engine
 
@@ -28,12 +29,13 @@ class StockfishEngine(engine.Engine):
   def __init__(
       self,
       limit: chess.engine.Limit,
+      skill_level: int | None = None,
   ) -> None:
     self._limit = limit
-    self._skill_level = None
+    self._skill_level = skill_level
     bin_path = os.path.join(
         os.getcwd(),
-        '../Stockfish/src/stockfish',
+        'Stockfish/src/stockfish',
     )
     self._raw_engine = chess.engine.SimpleEngine.popen_uci(bin_path)
 
@@ -55,10 +57,14 @@ class StockfishEngine(engine.Engine):
 
   def analyse(self, board: chess.Board) -> engine.AnalysisResult:
     """Returns analysis results from stockfish."""
+    if self._skill_level is not None:
+      self._raw_engine.configure({'Skill Level': self._skill_level})
     return self._raw_engine.analyse(board, limit=self._limit)
 
   def play(self, board: chess.Board) -> chess.Move:
     """Returns the best move from stockfish."""
+    if self._skill_level is not None:
+      self._raw_engine.configure({'Skill Level': self._skill_level})
     best_move = self._raw_engine.play(board, limit=self._limit).move
     if best_move is None:
       raise ValueError('No best move found, something went wrong.')

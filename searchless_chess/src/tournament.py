@@ -33,6 +33,9 @@ from searchless_chess.src.engines import engine
 from searchless_chess.src.engines import stockfish_engine
 
 
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+os.environ["XLA_FLAGS"] = "--xla_gpu_autotune_level=0"
+
 _NUM_GAMES = flags.DEFINE_integer(
     name='num_games',
     default=None,
@@ -43,7 +46,7 @@ _NUM_GAMES = flags.DEFINE_integer(
 # We use a stockfish engine to evaluate the current board and terminate the
 # game early if the score is high enough (i.e., _MIN_SCORE_TO_STOP).
 _EVAL_STOCKFISH_ENGINE = stockfish_engine.StockfishEngine(
-    limit=chess.engine.Limit(time=0.01)
+    limit=chess.engine.Limit(time=0.01), 
 )
 _MIN_SCORE_TO_STOP = 1300
 
@@ -160,7 +163,7 @@ def main(argv: Sequence[str]) -> None:
   # Encyclopedia of Chess Openings.
   openings_path = os.path.join(
       os.getcwd(),
-      '../data/eco_openings.pgn',
+      'searchless_chess/data/eco_openings.pgn',
   )
   opening_boards = list()
 
@@ -181,20 +184,29 @@ def main(argv: Sequence[str]) -> None:
   engines = {
       agent: constants.ENGINE_BUILDERS[agent]()
       for agent in [
-          '9M',
-          '136M',
           '270M',
-          'stockfish',
-          'stockfish_all_moves',
-          'leela_chess_zero_depth_1',
-          'leela_chess_zero_policy_net',
-          'leela_chess_zero_400_sims',
+          'stockfish_1',
+          'stockfish_2',
+          'stockfish_3',
+          'stockfish_4',
+          'stockfish_5',
+          'stockfish_6',
+          'stockfish_7',
+          'stockfish_8',
+          #'9M',
+          #'136M',
+          #'270M',
+          #'stockfish',
+          #'stockfish_all_moves',
+          #'leela_chess_zero_depth_1',
+          #'leela_chess_zero_policy_net',
+          #'leela_chess_zero_400_sims',
       ]
   }
 
   games = _run_tournament(engines=engines, opening_boards=opening_boards)
 
-  games_path = os.path.join(os.getcwd(), '../data/tournament_games.pgn')
+  games_path = os.path.join(os.getcwd(), 'tournament_games.pgn')
 
   print(f'Writing games to {games_path}')
   with open(games_path, 'w') as file:

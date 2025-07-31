@@ -143,4 +143,28 @@ ENGINE_BUILDERS = {
     'leela_chess_zero_400_sims': lambda: lc0_engine.Lc0Engine(
         limit=chess.engine.Limit(nodes=400),
     ),
+    'stockfish_1': lambda: stockfish_engine.StockfishEngine(
+        limit=chess.engine.Limit(time=0.05), skill_level=0
+    ),
+    'stockfish_2': lambda: stockfish_engine.StockfishEngine(
+        limit=chess.engine.Limit(time=0.05), skill_level=3
+    ),
+    'stockfish_3': lambda: stockfish_engine.StockfishEngine(
+        limit=chess.engine.Limit(time=0.05), skill_level=6
+    ),
+    'stockfish_4': lambda: stockfish_engine.StockfishEngine(
+        limit=chess.engine.Limit(time=0.05), skill_level=9
+    ),
+    'stockfish_5': lambda: stockfish_engine.StockfishEngine(
+        limit=chess.engine.Limit(time=0.05), skill_level=11
+    ),
+    'stockfish_6': lambda: stockfish_engine.StockfishEngine(
+        limit=chess.engine.Limit(time=0.05), skill_level=14
+    ),
+    'stockfish_7': lambda: stockfish_engine.StockfishEngine(
+        limit=chess.engine.Limit(time=0.05), skill_level=17
+    ),
+    'stockfish_8': lambda: stockfish_engine.StockfishEngine(
+        limit=chess.engine.Limit(time=0.05), skill_level=20
+    ),
 }
