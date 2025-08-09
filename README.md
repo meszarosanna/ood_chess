@@ -11,21 +11,17 @@ cd ood_chess
 
 2. Create and activate a virtual evironment and set
 
-python -m venv chess 
+python3 -m venv chess 
 source chess/bin/activate
-export PYTHONPATH=$PYTHONPATH:$(pwd)
+export PYTHONPATH=$PYTHONPATH:(pwd)         %export PYTHONPATH=$PYTHONPATH:/home/am3049/ood_chess for me
 
 3. Install dependencies:
 
 pip install -r requirements.txt
 
-4. Install jax with CUDA support
-
-pip install --upgrade "jax[cuda12_pip]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
-
 5. Filter the dataset
 
-python filter_data.py
+python filter_data.py       %for train and test folders
 
 6. Train the model
 Adjust batch_size in train.py if needed
