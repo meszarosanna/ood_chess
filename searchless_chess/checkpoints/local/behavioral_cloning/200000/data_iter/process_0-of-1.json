@@ -1,10 +1,3 @@
-{
-    "version": 2,
-    "last_seen_indices": {
-        "0": 51199999
-    },
-    "last_worker_index": -1,
-    "worker_count": 0,
-    "sampler": "IndexSampler(num_records=525388677, shard_options=NoSharding(shard_index=0, shard_count=1, drop_remainder=False), shuffle=True, num_epochs=None, seed=0)",
-    "data_source": "BagDataSource(path='/home/am3049/ood_chess/searchless_chess/data/train/filtered_behavioral_cloning_data.bag'"
-}
+version https://git-lfs.github.com/spec/v1
+oid sha256:7d418e89335ad55eb90a09784f0f0e327548992b81b40d337ed04e8b6913cb1d
+size 430
