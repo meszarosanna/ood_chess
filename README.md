@@ -13,7 +13,7 @@ cd ood_chess
 
 python3 -m venv chess 
 source chess/bin/activate
-export PYTHONPATH=$PYTHONPATH:(pwd) 
+export PYTHONPATH=$PYTHONPATH:(pwd)         %export PYTHONPATH=$PYTHONPATH:/home/am3049/ood_chess for me
 
 3. Install dependencies:
 
