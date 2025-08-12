@@ -1,7 +1,0 @@
-tensorflow==2.9
-tensorflow-addons
-numpy
-protobuf
-pyyaml
-rich
-tf-models-official
