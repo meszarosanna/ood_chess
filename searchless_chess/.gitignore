@@ -28,6 +28,5 @@ data/train/
 data/test/
 
 #Ignore checkpoints
-checkpoints/*
-!checkpoints/download.sh
-!checkpoints/9M_behavioral_cloning/
+checkpoints/
+

@@ -81,8 +81,8 @@ def main(argv: Sequence[str]) -> None:
       ),
       log_frequency=1000, #1
       num_steps=10000000, #20
-      ckpt_frequency=10000, #5
-      save_frequency=10000, #10
+      ckpt_frequency=1000000, #5
+      save_frequency=1000000, #10
   )
   eval_config = config_lib.EvalConfig(
       data=config_lib.DataConfig(
