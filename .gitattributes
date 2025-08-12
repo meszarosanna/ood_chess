@@ -1,0 +1,7 @@
+*.zip filter=lfs diff=lfs merge=lfs -text
+searchless_chess/checkpoints/local/behavioral_cloning/200000/** filter=lfs diff=lfs merge=lfs -text
+<<<<<<< HEAD
+searchless_chess/checkpoints/ filter=lfs diff=lfs merge=lfs -text
+searchless_chess/checkpoints/local/behavioral_cloning/800000/ filter=lfs diff=lfs merge=lfs -text
+=======
+>>>>>>> e411b3c0b53b2ce5c924175c80ed38e76b839149
