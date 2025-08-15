@@ -13,15 +13,27 @@ cd ood_chess
 
 python3 -m venv chess 
 source chess/bin/activate
-export PYTHONPATH=$PYTHONPATH:(pwd)         %export PYTHONPATH=$PYTHONPATH:/home/am3049/ood_chess for me
+export PYTHONPATH=$PYTHONPATH:(pwd)
 
 3. Install dependencies:
 
 pip install -r requirements.txt
 
-5. Filter the dataset
+If GPU available:
 
-python filter_data.py       %for train and test folders
+pip install --upgrade "jax[cuda12]" \ 
+-f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+
+5. Filtered dataset
+
+mkdir searchless_chess/data/train
+pip install gdown
+gdown 1ga9EPgP6O_Y23TJaNtpXrUItYsuAaxcb
+tar --zstd -xvf filtered_dataset.tar.zst
+
+OR
+
+python filter_data.py
 
 6. Train the model
 Adjust batch_size in train.py if needed
