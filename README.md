@@ -21,22 +21,18 @@ pip install -r requirements.txt
 
 If GPU available:
 
-pip install --upgrade "jax[cuda12]" \ 
--f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+pip install --upgrade "jax[cuda12]" -f https://storage.googleapis.com/jax-releases/jax_cuda_releases.html
+
 
 5. Filtered dataset
 
-mkdir searchless_chess/data/train
-pip install gdown
-gdown 1ga9EPgP6O_Y23TJaNtpXrUItYsuAaxcb
-tar --zstd -xvf filtered_dataset.tar.zst
+~/.download.sh
 
 OR
 
 python filter_data.py
 
 6. Train the model
-Adjust batch_size in train.py if needed
 
 python searchless_chess/src/train.py
 
