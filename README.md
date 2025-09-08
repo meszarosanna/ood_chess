@@ -7,12 +7,12 @@ Studying OOD generailzation of chess transformers.
 1. Clone the repository
 
 git clone https://github.com/meszarosanna/ood_chess.git
-cd ood_chess
 
 2. Create and activate a virtual evironment and set
 
 python3 -m venv chess 
 source chess/bin/activate
+cd ood_chess
 export PYTHONPATH=$PYTHONPATH:(pwd)
 
 3. Install dependencies:

@@ -30,9 +30,11 @@ class StockfishEngine(engine.Engine):
       self,
       limit: chess.engine.Limit,
       skill_level: int | None = None,
+      multipv: int = 1
   ) -> None:
     self._limit = limit
     self._skill_level = skill_level
+    self._multipv = multipv
     bin_path = os.path.join(
         os.getcwd(),
         'Stockfish/src/stockfish',
@@ -50,6 +52,10 @@ class StockfishEngine(engine.Engine):
   def skill_level(self) -> int | None:
     return self._skill_level
 
+  @property
+  def multipv(self) -> int:
+    return self._multipv
+
   @skill_level.setter
   def skill_level(self, skill_level: int) -> None:
     self._skill_level = skill_level
@@ -59,7 +65,10 @@ class StockfishEngine(engine.Engine):
     """Returns analysis results from stockfish."""
     if self._skill_level is not None:
       self._raw_engine.configure({'Skill Level': self._skill_level})
-    return self._raw_engine.analyse(board, limit=self._limit)
+    if self.multipv == 1:
+      return self._raw_engine.analyse(board, limit=self._limit)
+    else:
+      return self._raw_engine.analyse(board, limit=self._limit, multipv=self._multipv)
 
   def play(self, board: chess.Board) -> chess.Move:
     """Returns the best move from stockfish."""

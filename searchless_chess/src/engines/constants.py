@@ -65,6 +65,11 @@ def _build_neural_engine(
       num_layers = 4
       embedding_dim = 64
       num_heads = 4
+    case 'BC_270M':
+      policy = 'behavioral_cloning'
+      num_layers = 16
+      embedding_dim = 1024
+      num_heads = 8
     case _:
       raise ValueError(f'Unknown model: {model_name}')
 
@@ -73,16 +78,22 @@ def _build_neural_engine(
   match policy:
     case 'action_value':
       output_size = num_return_buckets
+      vocab_size = utils.NUM_ACTIONS
+      max_sequence_length = tokenizer.SEQUENCE_LENGTH + 2
     case 'behavioral_cloning':
       output_size = utils.NUM_ACTIONS 
+      vocab_size = len(tokenizer._CHARACTERS)
+      max_sequence_length = tokenizer.SEQUENCE_LENGTH + 1
     case 'state_value':
       output_size = num_return_buckets
+      vocab_size = len(tokenizer._CHARACTERS)
+      max_sequence_length = tokenizer.SEQUENCE_LENGTH + 1
 
   predictor_config = transformer.TransformerConfig(
-      vocab_size=utils.NUM_ACTIONS,
+      vocab_size=vocab_size,
       output_size=output_size,
       pos_encodings=transformer.PositionalEncodings.LEARNED,
-      max_sequence_length=tokenizer.SEQUENCE_LENGTH + 2,
+      max_sequence_length=max_sequence_length,
       num_heads=num_heads,
       num_layers=num_layers,
       embedding_dim=embedding_dim,
@@ -92,10 +103,17 @@ def _build_neural_engine(
   )
 
   predictor = transformer.build_transformer_predictor(config=predictor_config)
-  checkpoint_dir = os.path.join(
-      os.getcwd(),
-      f'searchless_chess/checkpoints/{model_name}',
-  )
+  if model_name == 'BC_270M':
+    checkpoint_dir = os.path.join(
+        os.getcwd(),
+        'searchless_chess/checkpoints/local/behavioral_cloning',
+    )
+  else:
+    checkpoint_dir = os.path.join(
+    os.getcwd(),
+    f'searchless_chess/checkpoints/{model_name}',
+    )
+    
   params = training_utils.load_parameters(
       checkpoint_dir=checkpoint_dir,
       params=predictor.initial_params(
@@ -128,8 +146,20 @@ ENGINE_BUILDERS = {
     '270M': functools.partial(
         _build_neural_engine, model_name='270M', checkpoint_step=6_400_000
     ),
+    'BC_270M': functools.partial(
+        _build_neural_engine, model_name='BC_270M', checkpoint_step=10_000_000
+    ),
     'stockfish': lambda: stockfish_engine.StockfishEngine(
-        limit=chess.engine.Limit(time=0.05)
+        limit=chess.engine.Limit(time=0.05)          #0.05
+    ),
+    'stockfish_top3': lambda: stockfish_engine.StockfishEngine(
+        limit=chess.engine.Limit(time=0.05*3), multipv=3
+    ),
+    'stockfish_top5': lambda: stockfish_engine.StockfishEngine(
+        limit=chess.engine.Limit(time=0.05*5), multipv=5
+    ),
+    'stockfish_top10': lambda: stockfish_engine.StockfishEngine(
+        limit=chess.engine.Limit(time=0.05*10), multipv=10
     ),
     'stockfish_all_moves': lambda: stockfish_engine.AllMovesStockfishEngine(
         limit=chess.engine.Limit(time=0.05)
