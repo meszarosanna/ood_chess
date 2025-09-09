@@ -30,7 +30,7 @@ from searchless_chess.src import utils
 
 _POLICY = flags.DEFINE_enum(
     'policy',
-    'behavioral_cloning',
+    'action_value',
     config_lib.POLICY_TYPES,
     'The policy used to play moves with the model.',
 )

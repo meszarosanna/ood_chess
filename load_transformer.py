@@ -46,7 +46,7 @@ def load_transformer_model(model_name):
         # Create the neural engine
         neural_engine = neural_engines.BCEngine(
             predict_fn=predict_fn,
-            temperature=0.005,  # Add some randomness to the moves
+            #temperature=0.005,  # Add some randomness to the moves
         )
         return neural_engine
     elif model_name == "BC 270M":
@@ -87,7 +87,7 @@ def load_transformer_model(model_name):
         # Create the neural engine
         neural_engine = neural_engines.BCEngine(
             predict_fn=predict_fn,
-            temperature=0.005,  # Add some randomness to the moves
+            #temperature=0.005,  # Add some randomness to the moves
         )
         return neural_engine
     elif model_name == "270M":
@@ -163,7 +163,7 @@ def load_transformer_model(model_name):
         neural_engine = neural_engines.ActionValueEngine(
             return_buckets_values=return_buckets_values,
             predict_fn=predict_fn,
-            temperature=0.005,
+            #temperature=0.005,
         )
         return neural_engine
     elif model_name == "SV":
@@ -196,7 +196,7 @@ def load_transformer_model(model_name):
         neural_engine = neural_engines.StateValueEngine(
             return_buckets_values=return_buckets_values,
             predict_fn=predict_fn,
-            temperature=0.005,
+            #temperature=0.005,
         )
         return neural_engine
     else:
