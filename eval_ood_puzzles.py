@@ -7,6 +7,7 @@ import pandas as pd
 import io
 from tqdm import tqdm
 import itertools
+import time
 from best_move_transformer import get_best_move as get_transformer_move
 from best_move_transformer import load_transformer_model
 from best_move_stockfish import get_best_move as get_stockfish_moves
@@ -39,12 +40,12 @@ count_stockfish_error_3 = 0  # Counter for IndexError
 count_stockfish_error_5 = 0  # Counter for IndexError
 count_stockfish_error_10 = 0  # Counter for IndexError
 
-INPUT_FILE = 'searchless_chess/data/test/behavioral_cloning_data.bag'
-_NUM_PUZZLES = 100
-#puzzles = pd.read_csv(INPUT_FILE, nrows=_NUM_PUZZLES)
+INPUT_FILE = 'ood_puzzles.csv'
+_NUM_PUZZLES = 1000
+puzzles = pd.read_csv(INPUT_FILE, nrows=_NUM_PUZZLES)
 
-reader = BagFileReader(INPUT_FILE)
-num_of_rec = len(reader)
+#reader = BagFileReader(INPUT_FILE)
+#num_of_rec = len(reader)
 
 def eval_entire_sequence(board):
     for move_idx, move in enumerate(puzzle["Moves"].split(' ')[1:]):
@@ -63,17 +64,18 @@ def eval_entire_sequence(board):
     return True
  
 
-#for puzzle_id, puzzle in tqdm(puzzles.iterrows(), total=_NUM_PUZZLES):
-for record in tqdm(itertools.islice(reader, 100), total=100):
+for puzzle_id, puzzle in tqdm(puzzles.iterrows(), total=_NUM_PUZZLES):
+#for record in tqdm(itertools.islice(reader, 100), total=100):
 #for record in tqdm(reader, total=num_of_rec):
-    fen, move  = CODERS['behavioral_cloning'].decode(record)
-    #fen = puzzle['FEN']
-    #move = puzzle['Moves']
+    #fen, move  = CODERS['behavioral_cloning'].decode(record)
+    fen = puzzle['FEN']
+    move = puzzle['Moves'].split(' ')[1]
     board = chess.Board(fen)
 
     # Get transformer's best move
-    #board.push(chess.Move.from_uci(puzzle["Moves"].split(' ')[0]))
-    best_move_transformer = neural_engine.play(board)
+    board.push(chess.Move.from_uci(puzzle["Moves"].split(' ')[0]))
+    
+    #best_move_transformer = neural_engine.play(board)
 
     #Check if the move is legal
     #if board.is_legal(best_move_transformer):
@@ -92,9 +94,9 @@ for record in tqdm(itertools.islice(reader, 100), total=100):
         
     #stockfish_moves_1 = get_stockfish_moves(fen, STOCKFISH_DEPTH, STOCKFISH_TIME, 1, win_probab=False)
     stockfish_moves_1 = stockfish_engine_top1.play(board).uci()
-    in_top1 = (best_move_transformer.uci() == stockfish_moves_1)
-    if in_top1:
-        count_top1 += 1
+    #in_top1 = (best_move_transformer.uci() == stockfish_moves_1)
+    #if in_top1:
+    #    count_top1 += 1
         
     
     #try:
