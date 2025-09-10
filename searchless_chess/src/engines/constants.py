@@ -150,13 +150,7 @@ ENGINE_BUILDERS = {
         _build_neural_engine, model_name='BC_270M', checkpoint_step=10_000_000
     ),
     'stockfish': lambda: stockfish_engine.StockfishEngine(
-        limit=chess.engine.Limit(time=0.05)          #0.05
-    ),
-    'stockfish_top3': lambda: stockfish_engine.StockfishEngine(
-        limit=chess.engine.Limit(time=0.05*3), multipv=3
-    ),
-    'stockfish_top5': lambda: stockfish_engine.StockfishEngine(
-        limit=chess.engine.Limit(time=0.05*5), multipv=5
+        limit=chess.engine.Limit(depth=)         
     ),
     'stockfish_top10': lambda: stockfish_engine.StockfishEngine(
         limit=chess.engine.Limit(time=0.05*10), multipv=10

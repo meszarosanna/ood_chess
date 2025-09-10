@@ -44,6 +44,7 @@ _AGENT = flags.DEFINE_enum(
         '9M',
         '136M',
         '270M',
+        'BC_270M',
         'stockfish',
         'stockfish_all_moves',
         'leela_chess_zero_depth_1',
@@ -105,14 +106,23 @@ def main(argv: Sequence[str]) -> None:
   puzzles = pd.read_csv(puzzles_path, nrows=_NUM_PUZZLES.value)
   engine = constants.ENGINE_BUILDERS[_AGENT.value]()
 
+  count_correct = 0
+
   for puzzle_id, puzzle in puzzles.iterrows():
     correct = evaluate_puzzle_from_pandas_row(
         puzzle=puzzle,
         engine=engine,
     )
-    print(
-        {'puzzle_id': puzzle_id, 'correct': correct, 'rating': puzzle['Rating']}
-    )
+    #print(
+    #    {'puzzle_id': puzzle_id, 'correct': correct, 'rating': puzzle['Rating']}
+    #)
+    if correct:
+      count_correct += 1
+
+    if puzzle_id % 100 == 0:
+      print(f'Puzzle {puzzle_id}, current accuracy: {count_correct / (puzzle_id + 1)}')
+
+  print(count_correct)
 
 
 if __name__ == '__main__':

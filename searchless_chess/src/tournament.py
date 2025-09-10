@@ -20,6 +20,8 @@ import copy
 import datetime
 import itertools
 import os
+import time
+import pandas as pd 
 
 from absl import app
 from absl import flags
@@ -81,7 +83,10 @@ def _play_game(
       or board.can_claim_fifty_moves()
       or board.is_repetition()
   ):
-    best_move = engines[current_player].play(board)
+    if engines_names[current_player] == "BC_270M":
+      best_move = engines[current_player].play(board, legal=True)
+    else:
+      best_move = engines[current_player].play(board)
     print(f'Best move: {best_move.uci()}')
 
     # Push move to the game.
@@ -170,7 +175,7 @@ def main(argv: Sequence[str]) -> None:
   with open(openings_path, 'r') as file:
     while (game := chess.pgn.read_game(file)) is not None:
       opening_boards.append(game.end().board())
-
+  
   # We subsample the openings according to the desired number of games.
   rng = np.random.default_rng(seed=1)
   opening_indices = rng.choice(
@@ -181,10 +186,32 @@ def main(argv: Sequence[str]) -> None:
   )
   opening_boards = list(opening_boards[idx] for idx in opening_indices)
 
+
+  # Load chess960 openings from a separate file
+  chess960_opening_boards = list()
+  chess960_start = pd.read_csv('ood_puzzles_chess960.csv')
+  for id, puzzle in chess960_start.iterrows():
+      board = chess.Board(puzzle['FEN'])
+      chess960_opening_boards.append(board)
+
+  # We subsample the openings according to the desired number of games.
+  rng = np.random.default_rng(seed=1)
+  opening_indices = rng.choice(
+      np.arange(len(chess960_opening_boards)),
+      # Divide by two as we consider both sides per opening (white and black).
+      size=_NUM_GAMES.value // 2,
+      replace=False,
+  )
+
+  chess960_opening_boards = list(chess960_opening_boards[idx] for idx in opening_indices)
+
+
+
+
   engines = {
       agent: constants.ENGINE_BUILDERS[agent]()
       for agent in [
-          '270M',
+          'BC_270M',
           'stockfish_1',
           'stockfish_2',
           'stockfish_3',
@@ -204,9 +231,9 @@ def main(argv: Sequence[str]) -> None:
       ]
   }
 
-  games = _run_tournament(engines=engines, opening_boards=opening_boards)
+  games = _run_tournament(engines=engines, opening_boards=chess960_opening_boards)
 
-  games_path = os.path.join(os.getcwd(), 'tournament_games.pgn')
+  games_path = os.path.join(os.getcwd(), 'chess960_tournament_games.pgn')
 
   print(f'Writing games to {games_path}')
   with open(games_path, 'w') as file:
