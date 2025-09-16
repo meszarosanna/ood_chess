@@ -22,6 +22,8 @@ import itertools
 import os
 import time
 import pandas as pd 
+import sys
+#sys.path.append('searchless_chess/src')
 
 from absl import app
 from absl import flags
@@ -77,6 +79,11 @@ def _play_game(
   board = initial_board
   result = None
   print(f'Starting FEN: {board.fen()}')
+  with open('log_tournament_chess9604.csv', 'a') as file:
+      file.write(f'Starting FEN: {board.fen()}\n')
+
+  count_not_legal = 0
+  count_move = 0
 
   while not (
       board.is_game_over()
@@ -84,10 +91,14 @@ def _play_game(
       or board.is_repetition()
   ):
     if engines_names[current_player] == "BC_270M":
-      best_move = engines[current_player].play(board, legal=True)
+      best_move = engines[current_player].play(board, legal=False)
+      count_move += 1
+      if not board.is_legal(best_move):
+          best_move = engines[current_player].play(board, legal=True)
+          count_not_legal += 1
     else:
       best_move = engines[current_player].play(board)
-    print(f'Best move: {best_move.uci()}')
+      count_move += 1
 
     # Push move to the game.
     board.push(best_move)
@@ -96,6 +107,8 @@ def _play_game(
     # We analyse the board once the last move is done and pushed.
     info = _EVAL_STOCKFISH_ENGINE.analyse(board)
     score = info['score'].relative
+    with open('log_tournament_chess9604.csv', 'a') as file:
+      file.write(f"{score}\n")
     if score.is_mate():
       is_winning = score.mate() > 0
     else:
@@ -109,6 +122,9 @@ def _play_game(
       else:
         result = '0-1'
       break
+  with open('log_tournament_chess9604.csv', 'a') as file:
+    file.write(f'{count_not_legal},{count_move}\n')
+    file.write(f'End FEN: {board.fen()}\n')
   print(f'End FEN: {board.fen()}')
 
   game = chess.pgn.Game.from_board(board)
@@ -143,6 +159,8 @@ def _run_tournament(
 
   for engine_name_0, engine_name_1 in itertools.combinations(engines, 2):
     print(f'Playing games between {engine_name_0} and {engine_name_1}')
+    with open('log_tournament_chess9604.csv', 'a') as file:
+      file.write(f'Playing games between {engine_name_0} and {engine_name_1}\n')
     engine_0 = engines[engine_name_0]
     engine_1 = engines[engine_name_1]
 
@@ -189,7 +207,7 @@ def main(argv: Sequence[str]) -> None:
 
   # Load chess960 openings from a separate file
   chess960_opening_boards = list()
-  chess960_start = pd.read_csv('ood_puzzles_chess960.csv')
+  chess960_start = pd.read_csv('chess960_openings_30steps.csv')
   for id, puzzle in chess960_start.iterrows():
       board = chess.Board(puzzle['FEN'])
       chess960_opening_boards.append(board)
@@ -217,9 +235,9 @@ def main(argv: Sequence[str]) -> None:
           'stockfish_3',
           'stockfish_4',
           'stockfish_5',
-          'stockfish_6',
-          'stockfish_7',
-          'stockfish_8',
+          #'stockfish_6',
+          #'stockfish_7',
+          #'stockfish_8',
           #'9M',
           #'136M',
           #'270M',
@@ -233,7 +251,7 @@ def main(argv: Sequence[str]) -> None:
 
   games = _run_tournament(engines=engines, opening_boards=chess960_opening_boards)
 
-  games_path = os.path.join(os.getcwd(), 'chess960_tournament_games.pgn')
+  games_path = os.path.join(os.getcwd(), 'chess960_tournament_games4.pgn')
 
   print(f'Writing games to {games_path}')
   with open(games_path, 'w') as file:
