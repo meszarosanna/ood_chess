@@ -18,11 +18,12 @@ from searchless_chess.src.engines import constants
 from bagz import BagFileReader
 from constants import CODERS
 from scipy.stats import entropy
+from searchless_chess.src import utils
 
 
 
 
-MODEL_NAME = 'BC_270M_64' 
+MODEL_NAME = 'BC_270M' 
 #neural_engine = load_transformer_model(MODEL_NAME)
 neural_engine = constants.ENGINE_BUILDERS[MODEL_NAME]()
 stockfish_engine_sort = constants.ENGINE_BUILDERS['stockfish_sort']()
@@ -53,8 +54,8 @@ count_stockfish_error_5 = 0  # Counter for IndexError
 count_stockfish_error_10 = 0  # Counter for IndexError
 entropies = []
 
-INPUT_FILE =  'ood_puzzles.csv' #'searchless_chess/data/test/filtered_behavioral_cloning_data.bag'
-_NUM_PUZZLES = 1000
+INPUT_FILE = "ood_puzzles.csv" #'searchless_chess/data/test/filtered_behavioral_cloning_data.bag'
+_NUM_PUZZLES = 100
 puzzles = pd.read_csv(INPUT_FILE, nrows=_NUM_PUZZLES)
 
 #reader = BagFileReader(INPUT_FILE)
@@ -82,12 +83,13 @@ for puzzle_id, puzzle in tqdm(puzzles.iterrows(), total=_NUM_PUZZLES):
 #for record in tqdm(reader, total=num_of_rec):
     #fen, move  = CODERS['behavioral_cloning'].decode(record)
     fen = puzzle['FEN']
-    move = puzzle['Moves'].split(' ')[1]
+    move = puzzle['Moves'] #.split(' ')[1]
     board = chess.Board(fen)
 
 
     # Get transformer's best move
     board.push(chess.Move.from_uci(puzzle["Moves"].split(' ')[0]))
+    print(board)
 
     #pinned_squares = []
     #for square in chess.SQUARES:
@@ -99,12 +101,28 @@ for puzzle_id, puzzle in tqdm(puzzles.iterrows(), total=_NUM_PUZZLES):
     #    count_pinned += 1
     
     best_move_transformer = neural_engine.play(board)
+    print(f'Transformer best move: {best_move_transformer}')
+
+    total_log_probs = neural_engine.analyse(board)
+    total_probs = np.exp(np.array(total_log_probs))
+
+    all_moves = [chess.Move.from_uci(utils.ACTION_TO_MOVE[i]) for i in range(len(utils.ACTION_TO_MOVE))]
+
+    # Print top-5 most probable moves (by action probability)
+    top_k = 5
+    top_indices = np.argsort(total_probs)[-top_k:][::-1]
+    print('Top 5 moves of Transformer:')
+    for rank_idx, move_idx in enumerate(top_indices, start=1):
+        pr = float(total_probs[move_idx])
+        mv = all_moves[move_idx]
+        print(f"{rank_idx}. {mv.uci()}  {pr:.6f}")
     
 
     #Check if the move is legal
     legal = board.is_legal(best_move_transformer)
     if legal:
         count_legal += 1
+        print("Legal")
     
     #    board.push(best_move_transformer)
     #    if board.is_checkmate():
@@ -134,14 +152,17 @@ for puzzle_id, puzzle in tqdm(puzzles.iterrows(), total=_NUM_PUZZLES):
     #if entire_sequence:
     #    count_entire += 1
 
-    #equal_move = best_move_transformer.uci() == move
-    #if equal_move:
-    #    count_move += 1
+    equal_move = best_move_transformer.uci() == move
+    if equal_move:
+        count_move += 1
+        print('Equal test label')
         
     stockfish_moves_1 = stockfish_engine_top1.play(board).uci()
+    print(f'Stockfish top1 move:{stockfish_moves_1}')
     in_top1 = (best_move_transformer.uci() == stockfish_moves_1)
     if in_top1:
         count_top1 += 1
+        print('In top1')
 
         
     # Get all legal moves
@@ -189,27 +210,34 @@ for puzzle_id, puzzle in tqdm(puzzles.iterrows(), total=_NUM_PUZZLES):
     #if stockfish_sorted == stockfish_moves_1:
     #    count_movev3 += 1
 
-    #try:
-    #    result = stockfish_engine_top3.analyse(board)
-    #    stockfish_moves_3 = [result[i]["pv"][0].uci() for i in range(3)]
-    #    in_top3 = (best_move_transformer.uci() in stockfish_moves_3)
-    #    if in_top3:
-    #        count_top3 += 1
-    #except IndexError:
-    #    count_stockfish_error_3 += 1
-    #    in_top3 = None
-    #try:
-    #    result = stockfish_engine_top5.analyse(board)
-    #    stockfish_moves_5 = [result[i]["pv"][0].uci() for i in range(5)]
-    #    in_top5 = (best_move_transformer.uci() in stockfish_moves_5)
-    #    if in_top5:
-    #        count_top5 += 1
-    #except IndexError:
-    #    count_stockfish_error_5 += 1
-    #    in_top5 = None
-    #try:
-    #    result = stockfish_engine_top10.analyse(board)
-    #    stockfish_moves_10 = [result[i]["pv"][0].uci() for i in range(10)]
+    try:
+        result = stockfish_engine_top3.analyse(board)
+        stockfish_moves_3 = [result[i]["pv"][0].uci() for i in range(3)]
+        print(f'Stockfish top3: {stockfish_engine_top3}')
+        in_top3 = (best_move_transformer.uci() in stockfish_moves_3)
+        if in_top3:
+            count_top3 += 1
+            print("in top3")
+    except IndexError:
+        count_stockfish_error_3 += 1
+        in_top3 = None
+        print('No top3')
+    try:
+        result = stockfish_engine_top5.analyse(board)
+        stockfish_moves_5 = [result[i]["pv"][0].uci() for i in range(5)]
+        print(f"Stockfish top5: {stockfish_engine_top5}")
+        in_top5 = (best_move_transformer.uci() in stockfish_moves_5)
+        if in_top5:
+            count_top5 += 1
+            print('In top5')
+    except IndexError:
+        count_stockfish_error_5 += 1
+        in_top5 = None
+        print('No top5')
+    try:
+        result = stockfish_engine_top10.analyse(board)
+        stockfish_moves_10 = [result[i]["pv"][0].uci() for i in range(10)]
+        print(f"Stockfish top10: {stockfish_engine_top10}")
         #stockfish_moves_3 = stockfish_moves_10[:3]
         #stockfish_moves_5 = stockfish_moves_10[:5]
         #in_top3 = (best_move_transformer.uci() in stockfish_moves_3)
@@ -218,12 +246,14 @@ for puzzle_id, puzzle in tqdm(puzzles.iterrows(), total=_NUM_PUZZLES):
         #    count_top3 += 1
         #if in_top5:
         #    count_top5 += 1
-    #    in_top10 = (best_move_transformer.uci() in stockfish_moves_10)
-    #    if in_top10:
-    #        count_top10 += 1
-    #except IndexError:
-    #    count_stockfish_error_10 += 1
-    #    in_top10 = None
+        in_top10 = (best_move_transformer.uci() in stockfish_moves_10)
+        if in_top10:
+            count_top10 += 1
+            print("In top10")
+    except IndexError:
+        count_stockfish_error_10 += 1
+        in_top10 = None
+        print("No top10")
     #try:
     #    result = stockfish_engine_top10.analyse(board)
     #    stockfish_moves_10 = [result[i]["pv"][0].uci() for i in range(10)]
