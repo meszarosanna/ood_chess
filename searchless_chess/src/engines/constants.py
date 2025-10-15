@@ -1,17 +1,9 @@
-# Copyright 2025 DeepMind Technologies Limited
+# Copyright 2025 DeepMind Technologies Limited AND Meszaros et al.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+# The original file was edited by Anna Meszaros to support the BC_270M model (trained on the filtered dataset) and
+# the tournaments with stockfishes and fairy-stockfishes
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
+
 
 """Constants for the engines."""
 
@@ -31,7 +23,7 @@ from searchless_chess.src import utils
 from searchless_chess.src.engines import lc0_engine
 from searchless_chess.src.engines import neural_engines
 from searchless_chess.src.engines import stockfish_engine
-
+from searchless_chess.src.engines import fairy_stockfish_engine
 
 def _build_neural_engine(
     model_name: str,
@@ -150,10 +142,19 @@ ENGINE_BUILDERS = {
         _build_neural_engine, model_name='BC_270M', checkpoint_step=10_000_000
     ),
     'stockfish': lambda: stockfish_engine.StockfishEngine(
-        limit=chess.engine.Limit(depth=)         
+        limit=chess.engine.Limit(depth=30)         
+    ),
+    'stockfish_sort': lambda: stockfish_engine.StockfishEngine(
+        limit=chess.engine.Limit(time=0.05)
+    ),
+    'stockfish_top3': lambda: stockfish_engine.StockfishEngine(
+        limit=chess.engine.Limit(depth=20), multipv=3
+    ),
+    'stockfish_top5': lambda: stockfish_engine.StockfishEngine(
+        limit=chess.engine.Limit(depth=20), multipv=5
     ),
     'stockfish_top10': lambda: stockfish_engine.StockfishEngine(
-        limit=chess.engine.Limit(time=0.05*10), multipv=10
+        limit=chess.engine.Limit(depth=20), multipv=10
     ),
     'stockfish_all_moves': lambda: stockfish_engine.AllMovesStockfishEngine(
         limit=chess.engine.Limit(time=0.05)
@@ -171,24 +172,30 @@ ENGINE_BUILDERS = {
         limit=chess.engine.Limit(time=0.05), skill_level=0
     ),
     'stockfish_2': lambda: stockfish_engine.StockfishEngine(
-        limit=chess.engine.Limit(time=0.05), skill_level=3
+        limit=chess.engine.Limit(time=0.05), skill_level=1
     ),
     'stockfish_3': lambda: stockfish_engine.StockfishEngine(
-        limit=chess.engine.Limit(time=0.05), skill_level=6
+        limit=chess.engine.Limit(time=0.05), skill_level=2
     ),
     'stockfish_4': lambda: stockfish_engine.StockfishEngine(
-        limit=chess.engine.Limit(time=0.05), skill_level=9
+        limit=chess.engine.Limit(time=0.05), skill_level=3
     ),
     'stockfish_5': lambda: stockfish_engine.StockfishEngine(
-        limit=chess.engine.Limit(time=0.05), skill_level=11
+        limit=chess.engine.Limit(time=0.05), skill_level=4
     ),
-    'stockfish_6': lambda: stockfish_engine.StockfishEngine(
-        limit=chess.engine.Limit(time=0.05), skill_level=14
+    'fairy_stockfish_1': lambda: fairy_stockfish_engine.FairyStockfishEngine(
+        limit=chess.engine.Limit(time=0.05), skill_level=0, variant = "horde"
     ),
-    'stockfish_7': lambda: stockfish_engine.StockfishEngine(
-        limit=chess.engine.Limit(time=0.05), skill_level=17
+    'fairy_stockfish_2': lambda: fairy_stockfish_engine.FairyStockfishEngine(
+        limit=chess.engine.Limit(time=0.05), skill_level=1, variant = "horde"
     ),
-    'stockfish_8': lambda: stockfish_engine.StockfishEngine(
-        limit=chess.engine.Limit(time=0.05), skill_level=20
+    'fairy_stockfish_3': lambda: fairy_stockfish_engine.FairyStockfishEngine(
+        limit=chess.engine.Limit(time=0.05), skill_level=2, variant = "horde"
     ),
+    'fairy_stockfish_4': lambda: fairy_stockfish_engine.FairyStockfishEngine(
+        limit=chess.engine.Limit(time=0.05), skill_level=3, variant = "horde"
+    ),
+    'fairy_stockfish_5': lambda: fairy_stockfish_engine.FairyStockfishEngine(
+        limit=chess.engine.Limit(time=0.05), skill_level=4, variant = "horde"
+    )
 }
