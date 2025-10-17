@@ -189,16 +189,16 @@ Options for input_file_names:
 - knights_and_rooks.csv
 
 ### Datasets creation
-- searchless_chess/data/train/behavioral_cloning_data.bag and searchless_chess/data/test/behavioral_cloning_data.bag:
-download the original dataset:
+- searchless_chess/data/train/behavioral_cloning_data.bag and searchless_chess/data/test/behavioral_cloning_data.bag:\\
+download the original dataset
 ```bash
 cd searchless_chess/data
 ./download.sh
 cd ../..
 ```
 
-- searchless_chess/data/train/filtered_behavioral_cloning_data.bag and searchless_chess/data/test/filtered_behavioral_cloning_data.bag:
-to filter the datasets run the following for the train dataset and test dataset, too:
+- searchless_chess/data/train/filtered_behavioral_cloning_data.bag and searchless_chess/data/test/filtered_behavioral_cloning_data.bag:\\
+to filter the datasets run the following for the train dataset and test dataset, too
 ```bash
 python evaluation/filter_data.py 
 ```
