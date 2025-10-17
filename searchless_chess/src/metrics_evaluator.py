@@ -1,6 +1,6 @@
-# Copyright 2025 DeepMind Technologies Limited AND Meszaros et al.
+# Copyright 2025 DeepMind Technologies Limited AND Anna Meszaros
 #
-# The original file was edited by Anna Meszaros to support the training of the BC_270M model on the filtered dataset
+# The original file was edited by A. Meszaros to support the training of the BC_270M model on the filtered dataset
 #
 
 """Evaluation for the Chess experiments, retrieving static metrics like losses."""

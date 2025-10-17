@@ -1,6 +1,6 @@
-# Copyright 2025 DeepMind Technologies Limited AND Meszaros et al.
+# Copyright 2025 DeepMind Technologies Limited AND Anna Meszaros
 #
-# The original file was edited by Anna Meszaros to support the evaluation of Stockfish with different
+# The original file was edited by A. Meszaros to support the evaluation of Stockfish with different
 # multipv values (for top3, top5, top10 moves),skll levels, and ELO settings.
 
 

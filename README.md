@@ -48,18 +48,10 @@ cd searchless_chess/checkpoints
 cd ../..
 ```
 
-6. (Optional) Download the ECO openings for the tournament and the train and test datasets which will be filtered in the 7th step.
-
-```bash
-cd searchless_chess/data
-./download.sh
-cd ../..
-```
-
 
 ### For training
 
-7. The filtered dataset
+6. The filtered dataset
 
 downloaded directly:
 ```bash
@@ -67,10 +59,17 @@ downloaded directly:
 ```
 OR obtained by filtering:
 
+download the original dataset:
+```bash
+cd searchless_chess/data
+./download.sh
+cd ../..
+```
+then filter:
 ```bash
 python filter_data.py 
 ```
-6. Train the model
+7. Train the model
 
 python searchless_chess/src/train.py
 
@@ -78,7 +77,7 @@ python searchless_chess/src/train.py
 
 Download and compile the latest version of Stockfish and Fairy-Stockfish (for Unix-like systems):
 
-7. Stockfish:
+8. Stockfish:
 
 ```bash
 git clone https://github.com/official-stockfish/Stockfish.git
@@ -87,7 +86,7 @@ make -j profile-build ARCH=x86-64-avx2
 cd ../..
 ```
 
-8. Fairy-Stockfish:
+9. Fairy-Stockfish:
 
 ```bash
 git clone https://github.com/fairy-stockfish/Fairy-Stockfish.git
@@ -104,6 +103,8 @@ python searchless_chess/src/tournament.py --num_games=100 --variant=standard
 Adjust num_games and variant (options: standard, chess960, horde) if needed.
 
 ### Running evaluations on the OOD datasets
+
+
 
 
 

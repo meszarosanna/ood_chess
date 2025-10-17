@@ -34,3 +34,11 @@ searchless_chess/checkpoints/
 Stockfish/
 Fairy-Stockfish/
 
+#Ignore local files
+figures_local/
+logs_local/
+scripts_local/
+datasets/oracle_starting_puzzles.csv
+datasets/shuffled_ood_puzzles_all_ordering.csv
+datasets/shuffled_ood_puzzles_chess960.csv
+

@@ -1,6 +1,6 @@
-# Copyright 2025 DeepMind Technologies Limited AND Meszaros et al.
+# Copyright 2025 DeepMind Technologies Limited AND Anna Meszaros
 #
-# The original file was edited by Anna Meszaros to support the turnament of the BC_270M model against stockfishes and fairy-stockfishes
+# The original file was edited by A. Meszaros to support the turnament of the BC_270M model against stockfishes and fairy-stockfishes
 # on variants chess960 and horde, and to count the % of illegal moves and OOD positions played by BC_270M.
 
 """Launches a tournament between various engines to compute their Elos on different variants."""

@@ -1,7 +1,7 @@
-# Copyright Meszaros et al.
+# Copyright 2025 Anna Meszaros 
 #
 # This script downloads the pretrained model on the filtered dataset.
-# For simplicity, the file is in the searchless_chess folder, but it was created by Meszaros et al.
+# For simplicity, the file is in the searchless_chess folder, but it was created by A. Meszaros
 #
 
 mkdir -p local/behavioral_cloning

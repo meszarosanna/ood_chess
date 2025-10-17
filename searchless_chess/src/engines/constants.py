@@ -1,6 +1,6 @@
-# Copyright 2025 DeepMind Technologies Limited AND Meszaros et al.
+# Copyright 2025 DeepMind Technologies Limited AND Anna Meszaros
 #
-# The original file was edited by Anna Meszaros to support the BC_270M model (trained on the filtered dataset) and
+# The original file was edited by A. Meszaros to support the BC_270M model (trained on the filtered dataset) and
 # the tournaments with stockfishes and fairy-stockfishes
 #
 

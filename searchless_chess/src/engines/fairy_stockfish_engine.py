@@ -1,6 +1,6 @@
-# Copyright Meszaros et al.
+# Copyright Anna Meszaros
 #
-# For simplicity, the file is in the searchless_chess folder, but it was created by Meszaros et al.
+# For simplicity, the file is in the searchless_chess folder, but it was created by A. Meszaros.
 #
 
 """Implements a fairy stockfish engine for chess variants."""

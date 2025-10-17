@@ -17,8 +17,6 @@
 
 set -ex
 
-wget https://storage.googleapis.com/searchless_chess/data/eco_openings.pgn
-
 mkdir test
 cd test
 wget https://storage.googleapis.com/searchless_chess/data/test/action_value_data.bag

@@ -1,6 +1,6 @@
-# Copyright 2025 DeepMind Technologies Limited AND Meszaros et al.
+# Copyright 2025 DeepMind Technologies Limited AND Anna Meszaros
 #
-# The BCEngine class was rewritten by Anna Meszaros to support the BC_270M model trained on the filtered dataset by behavioral cloning
+# The BCEngine class was rewritten by A. Meszaros to support the BC_270M model trained on the filtered dataset by behavioral cloning
 #
 
 """Implements the neural engines, returning analysis metrics for input FENs."""
