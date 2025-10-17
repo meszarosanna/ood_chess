@@ -35,6 +35,7 @@ Stockfish/
 Fairy-Stockfish/
 
 #Ignore local files
+API_token.txt
 figures_local/
 logs_local/
 scripts_local/

@@ -25,31 +25,6 @@ from searchless_chess.src.engines import engine
 from searchless_chess.src.engines import stockfish_engine
 
 
-piece_num = { chess.PAWN : 8, chess.ROOK : 2, chess.KNIGHT : 2, chess.BISHOP : 2, chess.QUEEN : 1}
-
-def check_ood(board):
-    bool_all_ood = False
-
-    #Check if the number of piece type exceeds the limit
-    for piece, num in piece_num.items():
-        if (len(board.pieces(piece, chess.WHITE)) > num) or (len(board.pieces(piece, chess.BLACK)) > num):
-            bool_all_ood = True
-
-    #Check if there are 2 bishops on the same color
-    if len(board.pieces(chess.BISHOP, chess.WHITE)) == 2:
-        l = list(board.pieces(chess.BISHOP, chess.WHITE))
-        if (chess.square_rank(l[0]) + chess.square_file(l[0]) + chess.square_rank(l[1]) + chess.square_file(l[1]))%2 == 0:
-            bool_all_ood = True
-    if len(board.pieces(chess.BISHOP, chess.BLACK)) == 2:
-        l= list(board.pieces(chess.BISHOP, chess.BLACK))
-        if (chess.square_rank(l[0]) + chess.square_file(l[0]) + chess.square_rank(l[1]) + chess.square_file(l[1]))%2 == 0:
-            bool_all_ood = True
-
-    return bool_all_ood
-
-
-
-
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 os.environ["XLA_FLAGS"] = "--xla_gpu_autotune_level=0"
 
@@ -72,6 +47,29 @@ _MIN_SCORE_TO_STOP = 1300
 count_ood = 0
 count_move = 0
 count_illegal = 0
+
+piece_num = { chess.PAWN : 8, chess.ROOK : 2, chess.KNIGHT : 2, chess.BISHOP : 2, chess.QUEEN : 1}
+
+def check_ood(board):
+    bool_all_ood = False
+
+    #Check if the number of piece type exceeds the limit
+    for piece, num in piece_num.items():
+        if (len(board.pieces(piece, chess.WHITE)) > num) or (len(board.pieces(piece, chess.BLACK)) > num):
+            bool_all_ood = True
+
+    #Check if there are 2 bishops on the same color
+    if len(board.pieces(chess.BISHOP, chess.WHITE)) == 2:
+        l = list(board.pieces(chess.BISHOP, chess.WHITE))
+        if (chess.square_rank(l[0]) + chess.square_file(l[0]) + chess.square_rank(l[1]) + chess.square_file(l[1]))%2 == 0:
+            bool_all_ood = True
+    if len(board.pieces(chess.BISHOP, chess.BLACK)) == 2:
+        l= list(board.pieces(chess.BISHOP, chess.BLACK))
+        if (chess.square_rank(l[0]) + chess.square_file(l[0]) + chess.square_rank(l[1]) + chess.square_file(l[1]))%2 == 0:
+            bool_all_ood = True
+
+    return bool_all_ood
+
 
 def _play_game(
     engines: tuple[engine.Engine, engine.Engine],
@@ -206,10 +204,7 @@ def _run_tournament(
 
 
 def main(argv: Sequence[str]) -> None:
-  if len(argv) > 1:
-    raise app.UsageError('Too many command-line arguments.')
   
-
   # To ensure variability in the games we play, we use the openings from the
   # Encyclopedia of Chess Openings.
   openings_path = os.path.join(

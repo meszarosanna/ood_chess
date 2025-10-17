@@ -1,5 +1,7 @@
 absl-py
 apache-beam
+berserk
+cairosvg
 chess
 chex
 dm-haiku
