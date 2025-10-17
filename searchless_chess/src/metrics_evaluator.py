@@ -1,17 +1,7 @@
-# Copyright 2025 DeepMind Technologies Limited
+# Copyright 2025 DeepMind Technologies Limited AND Meszaros et al.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+# The original file was edited by Anna Meszaros to support the training of the BC_270M model on the filtered dataset
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
 
 """Evaluation for the Chess experiments, retrieving static metrics like losses."""
 
@@ -354,11 +344,10 @@ def build_evaluator(
   }
   return evaluator_by_policy[config.policy](
       predictor=predictor,
-      # We always use the action-value data for evaluation since it provides the
-      # required information for all the metrics.
+      #we use the filtered behavioral cloning test data 
       dataset_path=os.path.join(
           os.getcwd(),
-          f'searchless_chess/data/{config.data.split}/action_value_data.bag',
+          f'searchless_chess/data/{config.data.split}/filtered_behavior_cloning_data.bag',
       ),
       num_return_buckets=config.num_return_buckets,
       num_eval_data=config.num_eval_data,

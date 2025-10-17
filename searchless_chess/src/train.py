@@ -1,17 +1,8 @@
-# Copyright 2025 DeepMind Technologies Limited
+# Copyright 2025 DeepMind Technologies Limited AND Meszaros et al.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+# The original file was edited by Anna Meszaros to support the training of the BC_270M model on the filtered dataset
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
+
 
 """An example training script."""
 
@@ -30,7 +21,7 @@ from searchless_chess.src import utils
 
 _POLICY = flags.DEFINE_enum(
     'policy',
-    'action_value',
+    'behavioral_cloning',
     config_lib.POLICY_TYPES,
     'The policy used to play moves with the model.',
 )
@@ -79,10 +70,10 @@ def main(argv: Sequence[str]) -> None:
           policy=policy,
           split='train',
       ),
-      log_frequency=1000, #1
-      num_steps=10000000, #20
-      ckpt_frequency=1000000, #5
-      save_frequency=1000000, #10
+      log_frequency=1000,
+      num_steps=10000000,
+      ckpt_frequency=1000000,
+      save_frequency=1000000, 
   )
   eval_config = config_lib.EvalConfig(
       data=config_lib.DataConfig(
@@ -95,9 +86,9 @@ def main(argv: Sequence[str]) -> None:
       ),
       use_ema_params=True,
       policy=policy,
-      batch_size=256, #32
+      batch_size=256,
       num_return_buckets=num_return_buckets,
-      #num_eval_data=64,
+      num_eval_data=64,
   )
 
   params = training.train(

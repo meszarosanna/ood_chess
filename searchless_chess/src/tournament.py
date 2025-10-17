@@ -1,19 +1,9 @@
-# Copyright 2025 DeepMind Technologies Limited
+# Copyright 2025 DeepMind Technologies Limited AND Meszaros et al.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
+# The original file was edited by Anna Meszaros to support the turnament of the BC_270M model against stockfishes and fairy-stockfishes
+# on variants chess960 and horde.
 
-"""Launches a tournament between various engines to compute their Elos."""
+"""Launches a tournament between various engines to compute their Elos on different variants."""
 
 from collections.abc import Mapping, Sequence
 import copy
@@ -30,11 +20,14 @@ from absl import flags
 import chess
 import chess.engine
 import chess.pgn
+import chess.variant
 import numpy as np
 
 from searchless_chess.src.engines import constants
 from searchless_chess.src.engines import engine
 from searchless_chess.src.engines import stockfish_engine
+from searchless_chess.src.engines import fairy_stockfish_engine
+from filter_puzzle import check_ood
 
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -46,14 +39,19 @@ _NUM_GAMES = flags.DEFINE_integer(
     help='The number of games to play between each pair of engines.',
     required=True,
 )
-
-# We use a stockfish engine to evaluate the current board and terminate the
-# game early if the score is high enough (i.e., _MIN_SCORE_TO_STOP).
-_EVAL_STOCKFISH_ENGINE = stockfish_engine.StockfishEngine(
-    limit=chess.engine.Limit(time=0.01), 
+_VARIANT = flags.DEFINE_string(
+    name='variant',
+    default=None,
+    help='Chess variant to play the tournament on: standard, chess960, horde.',
+    required=True,
 )
+  
+
 _MIN_SCORE_TO_STOP = 1300
 
+count_ood = 0
+count_move = 0
+count_illegal = 0
 
 def _play_game(
     engines: tuple[engine.Engine, engine.Engine],
@@ -79,11 +77,14 @@ def _play_game(
   board = initial_board
   result = None
   print(f'Starting FEN: {board.fen()}')
-  with open('log_tournament_chess9604.csv', 'a') as file:
-      file.write(f'Starting FEN: {board.fen()}\n')
+  #with open('logs.csv', 'a') as file:
+  #    file.write(f'Starting FEN: {board.fen()}\n')
 
-  count_not_legal = 0
-  count_move = 0
+
+  # We use a stockfish engine to evaluate the current board and terminate the
+  # game early if the score is high enough (i.e., _MIN_SCORE_TO_STOP).
+  if _VARIANT.value == 'standard' or 'chess960':
+      _EVAL_STOCKFISH_ENGINE = stockfish_engine.StockfishEngine(limit=chess.engine.Limit(time=0.01))
 
   while not (
       board.is_game_over()
@@ -91,41 +92,47 @@ def _play_game(
       or board.is_repetition()
   ):
     if engines_names[current_player] == "BC_270M":
+      if check_ood(board):
+        global count_ood
+        count_ood +=1
       best_move = engines[current_player].play(board, legal=False)
+      global count_move
       count_move += 1
       if not board.is_legal(best_move):
           best_move = engines[current_player].play(board, legal=True)
-          count_not_legal += 1
+          global count_illegal
+          count_illegal += 1
     else:
       best_move = engines[current_player].play(board)
-      count_move += 1
+
+    print(f"Move of {engines_names[current_player]}: {best_move}")
 
     # Push move to the game.
     board.push(best_move)
     current_player = 1 - current_player
 
     # We analyse the board once the last move is done and pushed.
-    info = _EVAL_STOCKFISH_ENGINE.analyse(board)
-    score = info['score'].relative
-    with open('log_tournament_chess9604.csv', 'a') as file:
-      file.write(f"{score}\n")
-    if score.is_mate():
-      is_winning = score.mate() > 0
-    else:
-      is_winning = score.score() > 0
-    score_too_high = score.is_mate() or abs(score.score()) > _MIN_SCORE_TO_STOP
+    if _VARIANT.value == 'standard' or _VARIANT.value == 'chess960':
+        info = _EVAL_STOCKFISH_ENGINE.analyse(board)
+        score = info['score'].relative
+        #with open('delete.csv', 'a') as file:
+        #  file.write(f"{score}\n")
+        if score.is_mate():
+          is_winning = score.mate() > 0
+        else:
+          is_winning = score.score() > 0
+        score_too_high = score.is_mate() or abs(score.score()) > _MIN_SCORE_TO_STOP
 
-    if score_too_high:
-      is_white = board.turn == chess.WHITE
-      if is_white and is_winning or (not is_white and not is_winning):
-        result = '1-0'
-      else:
-        result = '0-1'
-      break
-  with open('log_tournament_chess9604.csv', 'a') as file:
-    file.write(f'{count_not_legal},{count_move}\n')
-    file.write(f'End FEN: {board.fen()}\n')
-  print(f'End FEN: {board.fen()}')
+        if score_too_high:
+          is_white = board.turn == chess.WHITE
+          if is_white and is_winning or (not is_white and not is_winning):
+            result = '1-0'
+          else:
+            result = '0-1'
+          break
+    #with open('delete.csv', 'a') as file:
+    #  file.write(f'End FEN: {board.fen()}\n')
+    print(f'End FEN: {board.fen()}')
 
   game = chess.pgn.Game.from_board(board)
   game.headers['Event'] = 'UAIChess'
@@ -159,7 +166,7 @@ def _run_tournament(
 
   for engine_name_0, engine_name_1 in itertools.combinations(engines, 2):
     print(f'Playing games between {engine_name_0} and {engine_name_1}')
-    with open('log_tournament_chess9604.csv', 'a') as file:
+    with open('delete.csv', 'a') as file:
       file.write(f'Playing games between {engine_name_0} and {engine_name_1}\n')
     engine_0 = engines[engine_name_0]
     engine_1 = engines[engine_name_1]
@@ -181,6 +188,7 @@ def _run_tournament(
 def main(argv: Sequence[str]) -> None:
   if len(argv) > 1:
     raise app.UsageError('Too many command-line arguments.')
+  
 
   # To ensure variability in the games we play, we use the openings from the
   # Encyclopedia of Chess Openings.
@@ -207,9 +215,9 @@ def main(argv: Sequence[str]) -> None:
 
   # Load chess960 openings from a separate file
   chess960_opening_boards = list()
-  chess960_start = pd.read_csv('chess960_openings_30steps.csv')
+  chess960_start = pd.read_csv('chess960_openings_20steps.csv')
   for id, puzzle in chess960_start.iterrows():
-      board = chess.Board(puzzle['FEN'])
+      board = chess.Board(puzzle['FEN'], chess960=True)
       chess960_opening_boards.append(board)
 
   # We subsample the openings according to the desired number of games.
@@ -223,35 +231,55 @@ def main(argv: Sequence[str]) -> None:
 
   chess960_opening_boards = list(chess960_opening_boards[idx] for idx in opening_indices)
 
+  horde_opening_boards = [chess.variant.HordeBoard("rnbqkbnr/pppppppp/8/1PP2PP1/PPPPPPPP/PPPPPPPP/PPPPPPPP/PPPPPPPP w kq - 0 1")] * (_NUM_GAMES.value // 2)
 
 
+  if _VARIANT.value == 'standard':
+      opening_boards = opening_boards
+  elif _VARIANT.value == 'chess960':
+      opening_boards = chess960_opening_boards
+  elif _VARIANT.value == 'horde':
+      opening_boards = horde_opening_boards
+  else:
+      raise ValueError(f'Unknown variant {_VARIANT.value}')
+  
+  if _VARIANT.value == 'standard' or _VARIANT.value == 'chess960':
+      engines = {
+        agent: constants.ENGINE_BUILDERS[agent]()
+        for agent in [
+            'BC_270M',
+            'stockfish_1',
+            'stockfish_2',
+            'stockfish_3',
+            'stockfish_4',
+            'stockfish_5'
+        ]
+      }
+  elif _VARIANT.value == 'horde':
+      engines = {
+        agent: constants.ENGINE_BUILDERS[agent]()
+        for agent in [
+            'BC_270M',
+            'fairy_stockfish_1',
+            'fairy_stockfish_2',
+            'fairy_stockfish_3',
+            'fairy_stockfish_4',
+            'fairy_stockfish_5',
+        ]
+      }
+  else:
+      raise ValueError(f'Unknown variant {_VARIANT.value}')
+  
+  games = _run_tournament(engines=engines, opening_boards=opening_boards)
 
-  engines = {
-      agent: constants.ENGINE_BUILDERS[agent]()
-      for agent in [
-          'BC_270M',
-          'stockfish_1',
-          'stockfish_2',
-          'stockfish_3',
-          'stockfish_4',
-          'stockfish_5',
-          #'stockfish_6',
-          #'stockfish_7',
-          #'stockfish_8',
-          #'9M',
-          #'136M',
-          #'270M',
-          #'stockfish',
-          #'stockfish_all_moves',
-          #'leela_chess_zero_depth_1',
-          #'leela_chess_zero_policy_net',
-          #'leela_chess_zero_400_sims',
-      ]
-  }
+  games_path = os.path.join(os.getcwd(), f'{_VARIANT.value}_tournament_games.pgn')
 
-  games = _run_tournament(engines=engines, opening_boards=chess960_opening_boards)
-
-  games_path = os.path.join(os.getcwd(), 'chess960_tournament_games4.pgn')
+  global count_move
+  global count_ood
+  global count_illegal
+  print(count_ood)
+  print(count_move)
+  print(count_illegal)
 
   print(f'Writing games to {games_path}')
   with open(games_path, 'w') as file:

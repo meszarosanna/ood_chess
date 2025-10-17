@@ -20,7 +20,6 @@ from searchless_chess.src import tokenizer
 from searchless_chess.src import training_utils
 from searchless_chess.src import transformer
 from searchless_chess.src import utils
-from searchless_chess.src.engines import lc0_engine
 from searchless_chess.src.engines import neural_engines
 from searchless_chess.src.engines import stockfish_engine
 from searchless_chess.src.engines import fairy_stockfish_engine
@@ -142,7 +141,7 @@ ENGINE_BUILDERS = {
         _build_neural_engine, model_name='BC_270M', checkpoint_step=10_000_000
     ),
     'stockfish': lambda: stockfish_engine.StockfishEngine(
-        limit=chess.engine.Limit(depth=30)         
+        limit=chess.engine.Limit(depth=20)         
     ),
     'stockfish_sort': lambda: stockfish_engine.StockfishEngine(
         limit=chess.engine.Limit(time=0.05)
@@ -158,15 +157,6 @@ ENGINE_BUILDERS = {
     ),
     'stockfish_all_moves': lambda: stockfish_engine.AllMovesStockfishEngine(
         limit=chess.engine.Limit(time=0.05)
-    ),
-    'leela_chess_zero_depth_1': lambda: lc0_engine.AllMovesLc0Engine(
-        limit=chess.engine.Limit(nodes=1),
-    ),
-    'leela_chess_zero_policy_net': lambda: lc0_engine.Lc0Engine(
-        limit=chess.engine.Limit(nodes=1),
-    ),
-    'leela_chess_zero_400_sims': lambda: lc0_engine.Lc0Engine(
-        limit=chess.engine.Limit(nodes=400),
     ),
     'stockfish_1': lambda: stockfish_engine.StockfishEngine(
         limit=chess.engine.Limit(time=0.05), skill_level=0
