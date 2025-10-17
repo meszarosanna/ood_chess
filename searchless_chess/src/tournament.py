@@ -1,7 +1,7 @@
 # Copyright 2025 DeepMind Technologies Limited AND Meszaros et al.
 #
 # The original file was edited by Anna Meszaros to support the turnament of the BC_270M model against stockfishes and fairy-stockfishes
-# on variants chess960 and horde.
+# on variants chess960 and horde, and to count the % of illegal moves and OOD positions played by BC_270M.
 
 """Launches a tournament between various engines to compute their Elos on different variants."""
 
@@ -10,10 +10,7 @@ import copy
 import datetime
 import itertools
 import os
-import time
 import pandas as pd 
-import sys
-#sys.path.append('searchless_chess/src')
 
 from absl import app
 from absl import flags
@@ -26,8 +23,31 @@ import numpy as np
 from searchless_chess.src.engines import constants
 from searchless_chess.src.engines import engine
 from searchless_chess.src.engines import stockfish_engine
-from searchless_chess.src.engines import fairy_stockfish_engine
-from filter_puzzle import check_ood
+
+
+piece_num = { chess.PAWN : 8, chess.ROOK : 2, chess.KNIGHT : 2, chess.BISHOP : 2, chess.QUEEN : 1}
+
+def check_ood(board):
+    bool_all_ood = False
+
+    #Check if the number of piece type exceeds the limit
+    for piece, num in piece_num.items():
+        if (len(board.pieces(piece, chess.WHITE)) > num) or (len(board.pieces(piece, chess.BLACK)) > num):
+            bool_all_ood = True
+
+    #Check if there are 2 bishops on the same color
+    if len(board.pieces(chess.BISHOP, chess.WHITE)) == 2:
+        l = list(board.pieces(chess.BISHOP, chess.WHITE))
+        if (chess.square_rank(l[0]) + chess.square_file(l[0]) + chess.square_rank(l[1]) + chess.square_file(l[1]))%2 == 0:
+            bool_all_ood = True
+    if len(board.pieces(chess.BISHOP, chess.BLACK)) == 2:
+        l= list(board.pieces(chess.BISHOP, chess.BLACK))
+        if (chess.square_rank(l[0]) + chess.square_file(l[0]) + chess.square_rank(l[1]) + chess.square_file(l[1]))%2 == 0:
+            bool_all_ood = True
+
+    return bool_all_ood
+
+
 
 
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
@@ -215,7 +235,7 @@ def main(argv: Sequence[str]) -> None:
 
   # Load chess960 openings from a separate file
   chess960_opening_boards = list()
-  chess960_start = pd.read_csv('chess960_openings_20steps.csv')
+  chess960_start = pd.read_csv('searchless_chess/data/chess960_openings_20steps.csv')
   for id, puzzle in chess960_start.iterrows():
       board = chess.Board(puzzle['FEN'], chess960=True)
       chess960_opening_boards.append(board)
