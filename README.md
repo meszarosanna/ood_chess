@@ -108,13 +108,14 @@ pip install --upgrade "jax[cuda12]" -f https://storage.googleapis.com/jax-releas
 
 4. Download the parameters of the model:
  
-Checkpoints are saved to searchless_chess/checkpoints/local
+Checkpoints are saved to searchless_chess/checkpoints/local/behavioral_cloning
 
 ```bash
 cd searchless_chess/checkpoints
 ./download.sh
 cd ../..
 ```
+OR download using the link (https://drive.google.com/drive/folders/1X-LUMs2Zv8OpbX5tlfjgfMnFkKJW9S-r?usp=sharing) directly
 
 ### For training
 
@@ -206,7 +207,7 @@ Options for input_file_names:
 - chess960_puzzles.csv
 - knights_and_rooks.csv
 
-### Datasets creation
+### Dataset creation
 - searchless_chess/data/train/behavioral_cloning_data.bag and searchless_chess/data/test/behavioral_cloning_data.bag:
 
     download the original dataset
@@ -253,7 +254,8 @@ python evaluate/board_figures.py
 
 ## License and disclaimer
 
-Copyright 2025 Anna Meszaros and DeepMind Technologies Limited
+The project has Copyright 2025 Anna Meszaros 
+and part of the code has Copyright 2025 DeepMind Technologies Limited
 
 All software is licensed under the Apache License, Version 2.0 (Apache 2.0);
 you may not use this file except in compliance with the Apache 2.0 license.
@@ -276,7 +278,6 @@ materials distributed under the Apache 2.0 or CC-BY licenses are
 distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,
 either express or implied. See the licenses for the specific language governing
 permissions and limitations under those licenses.
-
 This is not an official Google product.
 
 
