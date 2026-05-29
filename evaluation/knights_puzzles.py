@@ -3,6 +3,7 @@
 """Creates chess puzzles where a king can be checkmated by a knight while being blocked by rooks."""
 
 import chess
+import pandas as pd
 import random
 from tqdm import tqdm
 
@@ -106,10 +107,30 @@ for _ in tqdm(range(NUM_PUZZLES)):
 
      
     puzzle_fen = board.board_fen()
-    
+
     filename = "knights_and_rooks.csv"
     with open(filename, "a") as outfile:
         outfile.write(puzzle_fen + ','+ moves + '\n')
 
 
-    
+# Filter: keep only puzzles with exactly one mating move
+def get_mate_moves(row):
+    board = chess.Board(row['FEN'])
+    mate_moves = []
+    for m in row['Moves'].strip().split():
+        try:
+            board2 = board.copy()
+            board2.push(chess.Move.from_uci(m))
+            if board2.is_checkmate():
+                mate_moves.append(m)
+        except Exception:
+            pass
+    return mate_moves
+
+df = pd.read_csv('knights_and_rooks.csv', names=['FEN', 'Moves'])
+df['mate_moves'] = df.apply(get_mate_moves, axis=1)
+filtered = df[df['mate_moves'].apply(len) == 1].copy()
+filtered['best_move'] = filtered['mate_moves'].apply(lambda x: x[0])
+filtered[['FEN', 'Moves', 'best_move']].to_csv('knights_and_rooks_single_mate.csv', index=False)
+print(f'Saved {len(filtered)} / {len(df)} puzzles with a single mating move.')
+
