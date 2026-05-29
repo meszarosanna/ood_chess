@@ -156,18 +156,53 @@ def compute_attack_labels(fen_strings):
     return attack_labels
 
 
-def train_probes(all_hidden, all_labels, probe_name='probe'):
+# Piece-type categories occupying a square, color-aware (P and p are distinct,
+# matching the input token): 0 = empty, 1-6 = white P/N/B/R/Q/K,
+# 7-12 = black p/n/b/r/q/k. 13 categories total.
+_NUM_PIECE_CATS = 13
+
+
+def compute_piece_categories(fen_strings):
+    """Piece-type category occupying each square, in tokenizer order.
+
+    Color-aware: white and black of the same piece type are distinct categories,
+    matching the per-square input token (which encodes piece color).
+
+    Returns:
+        cats: np.ndarray, shape (N, 64), dtype int32 — category in [0, 12].
+    """
+    N = len(fen_strings)
+    cats = np.zeros((N, 64), dtype=np.int32)
+    for i, fen in enumerate(fen_strings):
+        board = chess.Board(fen)
+        for s in range(64):
+            rank = 7 - (s // 8)
+            file_ = s % 8
+            piece = board.piece_at(chess.square(file_, rank))
+            if piece is not None:
+                base = 0 if piece.color == chess.WHITE else 6
+                cats[i, s] = base + piece.piece_type  # piece_type in 1..6
+    return cats
+
+
+def train_probes(all_hidden, all_labels, piece_cats, probe_name='probe'):
     """Trains one logistic regression probe per layer.
 
     Args:
         all_hidden: shape (N, num_layers+1, 64, emb_dim)
         all_labels: shape (N, 64) — integer class labels
+        piece_cats: shape (N, 64) — piece-type category per square (see
+            compute_piece_categories)
         probe_name: string used in print output
 
     Returns:
         accuracies: list of float, length num_layers+1
         majority_acc: float — accuracy of always predicting the most common class
         random_label_acc: float — probe accuracy when trained on shuffled labels
+        per_square_acc: float — accuracy of the per-square positional-prior
+            baseline (predict each square's most frequent train-set class)
+        per_piece_acc: float — accuracy of the per-piece-type prior baseline
+            (predict each piece type's most frequent train-set class)
     """
     N, num_layers_plus_one, _, emb_dim = all_hidden.shape
 
@@ -199,6 +234,33 @@ def train_probes(all_hidden, all_labels, probe_name='probe'):
     random_label_acc = float(accuracy_score(y_test_flat, clf_rand.predict(X_test_mid)))
     print(f'[{probe_name}] Baseline — random labels (layer {mid_layer}): {random_label_acc:.4f}')
 
+    # Per-square positional-prior baseline: for each of the 64 squares, predict
+    # the most frequent class at that square in the training set. Stronger than
+    # the global majority class because attack frequency varies by square.
+    y_train_sq = all_labels[train_idx]   # (n_train, 64)
+    y_test_sq = all_labels[test_idx]     # (n_test, 64)
+    num_classes = len(_ATTACK_LABEL_NAMES)
+    per_sq_pred = np.array([
+        np.bincount(y_train_sq[:, s], minlength=num_classes).argmax()
+        for s in range(64)
+    ])  # (64,) most-frequent class per square
+    per_square_acc = float((y_test_sq == per_sq_pred[None, :]).mean())
+    print(f'[{probe_name}] Baseline — per-square majority: {per_square_acc:.4f}')
+
+    # Per-piece-type prior baseline: group squares by the piece occupying them
+    # and predict each group's most frequent train-set class. Captures that
+    # attack status correlates with what piece sits on the square.
+    cats_train = piece_cats[train_idx].reshape(-1)
+    cats_test = piece_cats[test_idx].reshape(-1)
+    pred_by_cat = np.zeros(_NUM_PIECE_CATS, dtype=np.int64)
+    for c in range(_NUM_PIECE_CATS):
+        mask = cats_train == c
+        if mask.any():
+            pred_by_cat[c] = np.bincount(
+                y_train_flat[mask], minlength=num_classes).argmax()
+    per_piece_acc = float((y_test_flat == pred_by_cat[cats_test]).mean())
+    print(f'[{probe_name}] Baseline — per-piece-type majority: {per_piece_acc:.4f}')
+
     accuracies = []
     print(f'[{probe_name}] Training {num_layers_plus_one} linear probes...')
     for layer_idx in range(num_layers_plus_one):
@@ -216,10 +278,11 @@ def train_probes(all_hidden, all_labels, probe_name='probe'):
         label_name = 'embed' if layer_idx == 0 else f'L{layer_idx}'
         print(f'  Layer {label_name}: accuracy = {acc:.4f}')
 
-    return accuracies, majority_acc, random_label_acc
+    return accuracies, majority_acc, random_label_acc, per_square_acc, per_piece_acc
 
 
-def plot_results(accuracies, majority_acc, random_label_acc, output_path):
+def plot_results(accuracies, majority_acc, random_label_acc, per_square_acc,
+                 per_piece_acc, output_path):
     """Saves the attack-map probe accuracy plot."""
     x = list(range(len(accuracies)))
     x_labels = ['emb'] + [str(i) for i in range(1, len(accuracies))]
@@ -227,6 +290,10 @@ def plot_results(accuracies, majority_acc, random_label_acc, output_path):
     fig, ax = plt.subplots(figsize=(7, 4))
     ax.plot(x, accuracies, marker='o', color='seagreen', linewidth=2,
             markersize=5, label='Probe accuracy')
+    ax.axhline(y=per_square_acc, color='steelblue', linestyle='-.', linewidth=1.2,
+               label=f'Per-square majority ({per_square_acc:.2f})')
+    ax.axhline(y=per_piece_acc, color='crimson', linestyle=(0, (3, 1, 1, 1)),
+               linewidth=1.2, label=f'Per-piece majority ({per_piece_acc:.2f})')
     ax.axhline(y=majority_acc, color='darkorange', linestyle='--', linewidth=1.2,
                label=f'Majority class ({majority_acc:.2f})')
     ax.axhline(y=random_label_acc, color='gray', linestyle=':', linewidth=1.2,
@@ -272,13 +339,18 @@ def main():
         print(f'  class {cls} ({name}): {(flat == cls).sum()} squares '
               f'({100 * (flat == cls).mean():.1f}%)')
 
+    # Piece-type category per square (for the per-piece-type baseline).
+    piece_cats = compute_piece_categories(fen_strings)
+
     # Train attack-map probes.
-    accuracies, majority_acc, random_label_acc = train_probes(
-        all_hidden, attack_labels, probe_name='attack-map'
+    (accuracies, majority_acc, random_label_acc,
+     per_square_acc, per_piece_acc) = train_probes(
+        all_hidden, attack_labels, piece_cats, probe_name='attack-map'
     )
 
     # Plot.
-    plot_results(accuracies, majority_acc, random_label_acc, OUTPUT_PDF)
+    plot_results(accuracies, majority_acc, random_label_acc, per_square_acc,
+                 per_piece_acc, OUTPUT_PDF)
 
     print('\n=== Summary ===')
     print(f'{"Layer":<8} {"Accuracy":>10}')
@@ -287,6 +359,8 @@ def main():
         print(f'{tag:<8} {acc:>10.4f}')
     print(f'{"majority":<8} {majority_acc:>10.4f}')
     print(f'{"rand-lbl":<8} {random_label_acc:>10.4f}')
+    print(f'{"per-sq":<8} {per_square_acc:>10.4f}')
+    print(f'{"per-piece":<8} {per_piece_acc:>10.4f}')
 
 
 if __name__ == '__main__':

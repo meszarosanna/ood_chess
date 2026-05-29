@@ -53,7 +53,7 @@ CHECKPOINT_DIR = os.path.join(
 )
 CHECKPOINT_STEP = 10_000_000
 PUZZLES_CSV = os.path.join(
-    os.path.dirname(__file__), '..', 'datasets', 'id_puzzles.csv'
+    os.path.dirname(__file__), '..', 'datasets', 'ood_puzzles.csv'
 )
 OUTPUT_PDF = os.path.join(os.path.dirname(__file__), 'probing_best_move.pdf')
 
@@ -149,15 +149,81 @@ def compute_best_move_labels(predictor, params, fen_strings):
     return from_labels, to_labels
 
 
-def train_probes(all_hidden, all_labels, label_name):
+# Piece-type categories occupying a square, color-aware (P and p are distinct,
+# matching the input token): 0 = empty, 1-6 = white P/N/B/R/Q/K,
+# 7-12 = black p/n/b/r/q/k. 13 categories total.
+_NUM_PIECE_CATS = 13
+
+
+def compute_piece_categories(fen_strings):
+    """Piece-type category occupying each square, in tokenizer order.
+
+    Color-aware: white and black of the same piece type are distinct categories,
+    matching the per-square input token (which encodes piece color).
+
+    Returns:
+        cats: np.ndarray, shape (N, 64), dtype int32 — category in [0, 12].
+    """
+    N = len(fen_strings)
+    cats = np.zeros((N, 64), dtype=np.int32)
+    for i, fen in enumerate(fen_strings):
+        board = chess.Board(fen)
+        for s in range(64):
+            rank = 7 - (s // 8)
+            file_ = s % 8
+            piece = board.piece_at(chess.square(file_, rank))
+            if piece is not None:
+                base = 0 if piece.color == chess.WHITE else 6
+                cats[i, s] = base + piece.piece_type  # piece_type in 1..6
+    return cats
+
+
+def _balanced_group_prediction(group_train, y_train, group_test,
+                               num_groups, num_classes):
+    """Strongest trivial baseline using only a categorical group feature.
+
+    Mirrors the probe's class_weight='balanced': for each group, predicts the
+    class maximizing the inverse-class-frequency-weighted count, rather than the
+    plain mode. This is the balanced-accuracy analog of a per-group majority and
+    equivalent to a class-weighted classifier whose only input is the one-hot
+    group identity. For the rare-positive from/to task this lets groups whose
+    positive rate exceeds the base rate actually predict 1, instead of all
+    collapsing to 0 (which would give the trivial 0.5).
+
+    Returns:
+        np.ndarray of predicted classes for group_test.
+    """
+    class_counts = np.bincount(y_train, minlength=num_classes)
+    weights = len(y_train) / (num_classes * np.maximum(class_counts, 1))
+    pred_by_group = np.zeros(num_groups, dtype=np.int64)
+    for g in range(num_groups):
+        mask = group_train == g
+        if mask.any():
+            counts = np.bincount(y_train[mask], minlength=num_classes)
+            pred_by_group[g] = int(np.argmax(counts * weights))
+    return pred_by_group[group_test]
+
+
+def train_probes(all_hidden, all_labels, piece_cats, label_name):
     """Trains one binary logistic regression probe per layer.
 
     Uses balanced accuracy as the metric (handles 1-vs-63 class imbalance).
+
+    Args:
+        all_hidden: shape (N, num_layers+1, 64, emb_dim)
+        all_labels: shape (N, 64) — binary from/to labels
+        piece_cats: shape (N, 64) — piece-type category per square (see
+            compute_piece_categories)
+        label_name: string used in print output
 
     Returns:
         bal_accs: list of float, length num_layers+1
         random_bal_acc: float — balanced accuracy with shuffled labels
         majority_bal_acc: float — balanced accuracy of always predicting 0
+        per_square_bal_acc: float — balanced accuracy of the per-square
+            positional prior (predict each square's most frequent train label)
+        per_piece_bal_acc: float — balanced accuracy of the per-piece-type
+            prior (predict each piece type's most frequent train label)
     """
     N, num_layers_plus_one, _, emb_dim = all_hidden.shape
 
@@ -167,12 +233,13 @@ def train_probes(all_hidden, all_labels, label_name):
     y_test_flat  = all_labels[test_idx].reshape(-1)
     y_train_flat = all_labels[train_idx].reshape(-1)
 
-    # Majority-class baseline: always predict 0 (no move).
-    majority_pred = np.zeros_like(y_test_flat)
-    majority_bal_acc = float(balanced_accuracy_score(y_test_flat, majority_pred))
     pos_frac = float(y_test_flat.mean())
     print(f'\n[{label_name}] Positive fraction: {pos_frac:.4f} '
           f'({int(y_test_flat.sum())} / {len(y_test_flat)} squares)')
+
+    # Majority-class baseline: always predict 0 (no move).
+    majority_pred = np.zeros_like(y_test_flat)
+    majority_bal_acc = float(balanced_accuracy_score(y_test_flat, majority_pred))
     print(f'[{label_name}] Baseline — majority (always 0): '
           f'balanced acc = {majority_bal_acc:.4f}')
 
@@ -195,6 +262,27 @@ def train_probes(all_hidden, all_labels, label_name):
     print(f'[{label_name}] Baseline — random labels (layer {mid_layer}): '
           f'balanced acc = {random_bal_acc:.4f}')
 
+    # Per-square positional-prior baseline: predict, for each of the 64 squares,
+    # the class-balanced most-frequent label (inverse-frequency weighted,
+    # matching the probe's class_weight='balanced'). Scored with balanced acc.
+    sq_train = np.tile(np.arange(64), len(train_idx))
+    sq_test = np.tile(np.arange(64), len(test_idx))
+    per_sq_pred = _balanced_group_prediction(
+        sq_train, y_train_flat, sq_test, 64, 2)
+    per_square_bal_acc = float(balanced_accuracy_score(y_test_flat, per_sq_pred))
+    print(f'[{label_name}] Baseline — per-square (balanced): '
+          f'balanced acc = {per_square_bal_acc:.4f}')
+
+    # Per-piece-type prior baseline: group squares by the piece occupying them
+    # and predict each group's class-balanced most-frequent label.
+    cats_train = piece_cats[train_idx].reshape(-1)
+    cats_test = piece_cats[test_idx].reshape(-1)
+    per_piece_pred = _balanced_group_prediction(
+        cats_train, y_train_flat, cats_test, _NUM_PIECE_CATS, 2)
+    per_piece_bal_acc = float(balanced_accuracy_score(y_test_flat, per_piece_pred))
+    print(f'[{label_name}] Baseline — per-piece-type (balanced): '
+          f'balanced acc = {per_piece_bal_acc:.4f}')
+
     bal_accs = []
     print(f'[{label_name}] Training {num_layers_plus_one} linear probes...')
     for layer_idx in range(num_layers_plus_one):
@@ -216,10 +304,12 @@ def train_probes(all_hidden, all_labels, label_name):
         tag = 'embed' if layer_idx == 0 else f'L{layer_idx}'
         print(f'  Layer {tag}: balanced acc = {bal_acc:.4f}')
 
-    return bal_accs, majority_bal_acc, random_bal_acc
+    return (bal_accs, majority_bal_acc, random_bal_acc,
+            per_square_bal_acc, per_piece_bal_acc)
 
 
-def plot_results(from_accs, to_accs, majority_bal_acc, random_bal_acc, output_path):
+def plot_results(from_accs, to_accs, majority_bal_acc, random_bal_acc,
+                 per_square_bal_acc, per_piece_bal_acc, output_path):
     """Saves the best-move probe balanced accuracy plot."""
     x = list(range(len(from_accs)))
     x_labels = ['emb'] + [str(i) for i in range(1, len(from_accs))]
@@ -229,6 +319,10 @@ def plot_results(from_accs, to_accs, majority_bal_acc, random_bal_acc, output_pa
             markersize=5, label='From-square probe')
     ax.plot(x, to_accs, marker='s', color='coral', linewidth=2,
             markersize=5, label='To-square probe')
+    ax.axhline(y=per_square_bal_acc, color='seagreen', linestyle='-.',
+               linewidth=1.2, label=f'Per-square majority ({per_square_bal_acc:.2f})')
+    ax.axhline(y=per_piece_bal_acc, color='crimson', linestyle=(0, (3, 1, 1, 1)),
+               linewidth=1.2, label=f'Per-piece majority ({per_piece_bal_acc:.2f})')
     ax.axhline(y=majority_bal_acc, color='darkorange', linestyle='--',
                linewidth=1.2, label=f'Majority class ({majority_bal_acc:.2f})')
     ax.axhline(y=random_bal_acc, color='gray', linestyle=':',
@@ -268,14 +362,19 @@ def main():
     print('\nComputing best-move labels (transformer predictions)...')
     from_labels, to_labels = compute_best_move_labels(predictor, params, fen_strings)
 
-    from_accs, majority_bal_acc, random_bal_acc = train_probes(
-        all_hidden, from_labels, label_name='from-square'
+    # Piece-type category per square (for the per-piece-type baseline).
+    piece_cats = compute_piece_categories(fen_strings)
+
+    (from_accs, majority_bal_acc, random_bal_acc,
+     from_per_sq, from_per_piece) = train_probes(
+        all_hidden, from_labels, piece_cats, label_name='from-square'
     )
-    to_accs, _, _ = train_probes(
-        all_hidden, to_labels, label_name='to-square'
+    to_accs, _, _, to_per_sq, to_per_piece = train_probes(
+        all_hidden, to_labels, piece_cats, label_name='to-square'
     )
 
-    plot_results(from_accs, to_accs, majority_bal_acc, random_bal_acc, OUTPUT_PDF)
+    plot_results(from_accs, to_accs, majority_bal_acc, random_bal_acc,
+                 from_per_sq, from_per_piece, OUTPUT_PDF)
 
     print('\n=== Summary (balanced accuracy) ===')
     print(f'{"Layer":<8} {"From-sq":>10} {"To-sq":>10}')
@@ -284,6 +383,8 @@ def main():
         print(f'{tag:<8} {fa:>10.4f} {ta:>10.4f}')
     print(f'{"majority":<8} {majority_bal_acc:>10.4f} {majority_bal_acc:>10.4f}')
     print(f'{"rand-lbl":<8} {random_bal_acc:>10.4f} {random_bal_acc:>10.4f}')
+    print(f'{"per-sq":<8} {from_per_sq:>10.4f} {to_per_sq:>10.4f}')
+    print(f'{"per-piece":<8} {from_per_piece:>10.4f} {to_per_piece:>10.4f}')
 
 
 if __name__ == '__main__':
