@@ -226,7 +226,7 @@ def main(argv: Sequence[str]) -> None:
             board = chess.Board(fen)
             board.push(chess.Move.from_uci(puzzle["Moves"].split(' ')[0]))
             t_move = neural_engine.play(board)
-            evalulation(board), t_move
+            evalulation(board, t_move)
             eval_entire_sequence(board.copy(), moves[1:])
     elif INPUT_FILE in ["all_ordering_puzzles.csv", "chess960_puzzles.csv", "knights_and_rooks.csv", "more_pieces_puzzles.csv", "same_color_puzzles.csv"]:
         puzzles = pd.read_csv("datasets/" + INPUT_FILE, nrows=_NUM_PUZZLES)
