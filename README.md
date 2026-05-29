@@ -24,11 +24,15 @@ In a more challenging test, we evaluate the models on variants including Chess96
 |
 ├── evaluation                                          
 |   ├── board_figues.py                                 - Board figure creation
+|   ├── eval_entropy_ood_puzzles.py                     - Script for calculating the entropy of the output distiburions of the ID/OOD datasets
 |   ├── eval_ood_puzzles.py                             - Script for OOD evaluation
 |   ├── filter_data.py                                  - Filtering the train\test data
 |   ├── knights_puzzles.py                              - Knight&Rooks dataset creation
 |   ├── lichess_bot.py                                  - Script for playing games with out model as a lichess bot
 |   ├── more_pieces_and_same_color.py                   - More pieces and Same color datasets creation
+|   ├── probing_attacked.py                             - Probing the attack status prediction task
+|   ├── probing_best_move.py                            - Probing the best move prediction task
+|   ├── probing_legal_moves.py                          - Probing the number of legal moves prediction task
 |   └── training_dynamics.py                            - Script for creating the training dynamics figures
 |
 ├── Fairy-Stockfish                                     - Fairy-Stockfish (needs to be installed)
